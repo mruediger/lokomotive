@@ -166,3 +166,16 @@ func MatchJSONPathStringValue(t *testing.T, yamlConfig string, jsonPath string, 
 		t.Fatalf("Expected: %s, Got: %s", expected, got)
 	}
 }
+
+// JSONPathExists checks if the given YAML config has an object at the given JSON path, also provide
+// what error to expect.
+func JSONPathExists(t *testing.T, yamlConfig string, jsonPath string, errExp string) {
+	_, err := jsonPathValue(yamlConfig, jsonPath)
+	if err != nil && errExp == "" { //nolint:gocritic
+		t.Fatalf("Error not expected and failed with: %v", err)
+	} else if err != nil && !strings.Contains(err.Error(), errExp) {
+		t.Fatalf("Extracting JSON path value, expected error: %v to contain: %q", err, errExp)
+	} else if err == nil && errExp != "" {
+		t.Fatalf("Expected error %q but got none", errExp)
+	}
+}
