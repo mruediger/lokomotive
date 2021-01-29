@@ -24,25 +24,29 @@ func TestConversion(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		inputConfig          string
-		expectedManifestName string
+		expectedManifestName testutil.ObjectMetadata
 		expected             string
 		jsonPath             string
 	}{
 		{
-			name:                 "default profile",
-			inputConfig:          `component "experimental-istio-operator" {}`,
-			expectedManifestName: "istio-operator/templates/istio-operator-cr.yaml",
-			jsonPath:             "{.spec.profile}",
-			expected:             "minimal",
+			name:        "default profile",
+			inputConfig: `component "experimental-istio-operator" {}`,
+			expectedManifestName: testutil.ObjectMetadata{
+				Version: "install.istio.io/v1alpha1", Kind: "IstioOperator", Name: "istiocontrolplane",
+			},
+			jsonPath: "{.spec.profile}",
+			expected: "minimal",
 		},
 		{
 			name: "demo profile",
 			inputConfig: `component "experimental-istio-operator" {
 				profile = "demo"
 			}`,
-			expectedManifestName: "istio-operator/templates/istio-operator-cr.yaml",
-			jsonPath:             "{.spec.profile}",
-			expected:             "demo",
+			expectedManifestName: testutil.ObjectMetadata{
+				Version: "install.istio.io/v1alpha1", Kind: "IstioOperator", Name: "istiocontrolplane",
+			},
+			jsonPath: "{.spec.profile}",
+			expected: "demo",
 		},
 	}
 
@@ -67,5 +71,7 @@ func TestVerifyServiceMonitor(t *testing.T) {
 
 	component := NewConfig()
 	m := testutil.RenderManifests(t, component, Name, inputConfig)
-	testutil.ConfigFromMap(t, m, "istio-operator/templates/service-monitor.yaml")
+	testutil.ConfigFromMap(t, m, testutil.ObjectMetadata{
+		Version: "monitoring.coreos.com/v1", Kind: "ServiceMonitor", Name: "istio-operator",
+	})
 }

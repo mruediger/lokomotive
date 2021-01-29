@@ -133,7 +133,7 @@ func TestConversion(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		inputConfig          string
-		expectedManifestName string
+		expectedManifestName testutil.ObjectMetadata
 		expected             string
 		jsonPath             string
 	}{
@@ -146,9 +146,11 @@ component "prometheus-operator" {
   }
 }
 `,
-			expectedManifestName: "kube-prometheus-stack/templates/prometheus/prometheus.yaml",
-			expected:             "https://prometheus.externalurl.net",
-			jsonPath:             "{.spec.externalUrl}",
+			expectedManifestName: testutil.ObjectMetadata{
+				Version: "monitoring.coreos.com/v1", Kind: "Prometheus", Name: "prometheus-operator-kube-p-prometheus",
+			},
+			expected: "https://prometheus.externalurl.net",
+			jsonPath: "{.spec.externalUrl}",
 		},
 		{
 			name: "no external_url param",
@@ -163,9 +165,11 @@ component "prometheus-operator" {
 		  }
 		}
 		`,
-			expectedManifestName: "kube-prometheus-stack/templates/prometheus/prometheus.yaml",
-			expected:             "https://prometheus.mydomain.net",
-			jsonPath:             "{.spec.externalUrl}",
+			expectedManifestName: testutil.ObjectMetadata{
+				Version: "monitoring.coreos.com/v1", Kind: "Prometheus", Name: "prometheus-operator-kube-p-prometheus",
+			},
+			expected: "https://prometheus.mydomain.net",
+			jsonPath: "{.spec.externalUrl}",
 		},
 		{
 			name: "ingress creation for prometheus",
@@ -180,14 +184,18 @@ component "prometheus-operator" {
 		  }
 		}
 		`,
-			expectedManifestName: "kube-prometheus-stack/templates/prometheus/ingress.yaml",
-			expected:             "prometheus.mydomain.net",
-			jsonPath:             "{.spec.rules[0].host}",
+			expectedManifestName: testutil.ObjectMetadata{
+				Version: "networking.k8s.io/v1beta1", Kind: "Ingress", Name: "prometheus-operator-kube-p-prometheus",
+			},
+			expected: "prometheus.mydomain.net",
+			jsonPath: "{.spec.rules[0].host}",
 		},
 		{
-			name:                 "verify foldersFromFilesStructure in configmap",
-			inputConfig:          `component "prometheus-operator" {}`,
-			expectedManifestName: "kube-prometheus-stack/charts/grafana/templates/configmap-dashboard-provider.yaml",
+			name:        "verify foldersFromFilesStructure in configmap",
+			inputConfig: `component "prometheus-operator" {}`,
+			expectedManifestName: testutil.ObjectMetadata{
+				Version: "v1", Kind: "ConfigMap", Name: "prometheus-operator-grafana-config-dashboards",
+			},
 			expected: `apiVersion: 1
 providers:
 - name: 'sidecarProvider'

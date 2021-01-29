@@ -23,15 +23,27 @@ import (
 	"github.com/kinvolk/lokomotive/pkg/components/util"
 )
 
-// ConfigFromMap takes a map and a key and returns the value associated with the key. If the key
-// does not exist in that map, the function fails.
-func ConfigFromMap(t *testing.T, m map[string]string, k string) string {
-	ret, ok := m[k]
-	if !ok {
-		t.Fatalf("Config not found with filename: %q", k)
+// ObjectMetadata uniquely identifies any object in the list of YAML manifests.
+type ObjectMetadata struct {
+	Version string
+	Kind    string
+	Name    string
+}
+
+// ConfigFromMap takes a map and a key. The function returns the YAML object associated with the
+// key. If the key does not exist in that map, the function fails.
+func ConfigFromMap(t *testing.T, m map[string]string, key ObjectMetadata) string {
+	for _, v := range m {
+		for obj, val := range splitYAMLDocs(t, v) {
+			if obj == key {
+				return val
+			}
+		}
 	}
 
-	return ret
+	t.Fatalf("Given object not found: %+v", key)
+
+	return ""
 }
 
 // RenderManifests converts a component into YAML manifests.

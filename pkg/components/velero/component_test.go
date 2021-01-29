@@ -208,7 +208,7 @@ component "velero" {
       bucket   = "foo"
       provider = "aws"
     }
-		
+
     tolerations {
       key                = "TestResticToletrationKey"
       value              = "TestResticToletrationValue"
@@ -235,7 +235,9 @@ component "velero" {
 	jsonPath := "{.spec.template.spec.tolerations[0].key}"
 	expected := "TestResticToletrationKey"
 
-	gotConfig := testutil.ConfigFromMap(t, m, "velero/templates/restic-daemonset.yaml")
+	gotConfig := testutil.ConfigFromMap(t, m, testutil.ObjectMetadata{
+		Version: "apps/v1", Kind: "DaemonSet", Name: "restic",
+	})
 
 	testutil.MatchJSONPathStringValue(t, gotConfig, jsonPath, expected)
 }

@@ -96,7 +96,7 @@ func TestConversion(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		inputConfig          string
-		expectedManifestName string
+		expectedManifestName testutil.ObjectMetadata
 		expected             string
 		jsonPath             string
 	}{
@@ -108,9 +108,11 @@ func TestConversion(t *testing.T) {
 					metrics_scrape_interval = "10s"
 				}
 			}`,
-			expectedManifestName: "contour/templates/service-monitor.yaml",
-			jsonPath:             "{.spec.endpoints[0].interval}",
-			expected:             "10s",
+			expectedManifestName: testutil.ObjectMetadata{
+				Version: "monitoring.coreos.com/v1", Kind: "ServiceMonitor", Name: "envoy",
+			},
+			jsonPath: "{.spec.endpoints[0].interval}",
+			expected: "10s",
 		},
 	}
 
