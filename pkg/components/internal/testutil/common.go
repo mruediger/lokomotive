@@ -34,7 +34,12 @@ type ObjectMetadata struct {
 // key. If the key does not exist in that map, the function fails.
 func ConfigFromMap(t *testing.T, m map[string]string, key ObjectMetadata) string {
 	for _, v := range m {
-		for obj, val := range splitYAMLDocs(t, v) {
+		splittedYAML, err := splitYAMLDocs(v)
+		if err != nil {
+			t.Fatalf("Splitting YAML doc separated by '---': %v", err)
+		}
+
+		for obj, val := range splittedYAML {
 			if obj == key {
 				return val
 			}
