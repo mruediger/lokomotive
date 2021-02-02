@@ -96,7 +96,7 @@ func TestConversion(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		inputConfig          string
-		expectedManifestName testutil.ObjectMetadata
+		expectedManifestName util.ObjectMetadata
 		expected             string
 		jsonPath             string
 	}{
@@ -108,7 +108,7 @@ func TestConversion(t *testing.T) {
 					metrics_scrape_interval = "10s"
 				}
 			}`,
-			expectedManifestName: testutil.ObjectMetadata{
+			expectedManifestName: util.ObjectMetadata{
 				Version: "monitoring.coreos.com/v1", Kind: "ServiceMonitor", Name: "envoy",
 			},
 			jsonPath: "{.spec.endpoints[0].interval}",
@@ -134,7 +134,7 @@ func TestEnvoyHostPort(t *testing.T) {
 	t.Parallel()
 
 	componentCfg := `component "contour" {}`
-	expectedManifestName := testutil.ObjectMetadata{Version: "apps/v1", Kind: "DaemonSet", Name: "envoy"}
+	expectedManifestName := util.ObjectMetadata{Version: "apps/v1", Kind: "DaemonSet", Name: "envoy"}
 	jsonPath := "{.spec.template.spec.containers[1].ports[0].hostPort}"
 	errExpected := "hostPort is not found"
 

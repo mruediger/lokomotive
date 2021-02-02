@@ -23,18 +23,11 @@ import (
 	"github.com/kinvolk/lokomotive/pkg/components/util"
 )
 
-// ObjectMetadata uniquely identifies any object in the list of YAML manifests.
-type ObjectMetadata struct {
-	Version string
-	Kind    string
-	Name    string
-}
-
 // ConfigFromMap takes a map and a key. The function returns the YAML object associated with the
 // key. If the key does not exist in that map, the function fails.
-func ConfigFromMap(t *testing.T, m map[string]string, key ObjectMetadata) string {
+func ConfigFromMap(t *testing.T, m map[string]string, key util.ObjectMetadata) string {
 	for _, v := range m {
-		splittedYAML, err := splitYAMLDocs(v)
+		splittedYAML, err := util.SplitYAMLDocuments(v)
 		if err != nil {
 			t.Fatalf("Splitting YAML doc separated by '---': %v", err)
 		}

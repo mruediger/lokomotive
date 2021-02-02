@@ -133,7 +133,7 @@ func TestConversion(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		inputConfig          string
-		expectedManifestName testutil.ObjectMetadata
+		expectedManifestName util.ObjectMetadata
 		expected             string
 		jsonPath             string
 	}{
@@ -146,7 +146,7 @@ component "prometheus-operator" {
   }
 }
 `,
-			expectedManifestName: testutil.ObjectMetadata{
+			expectedManifestName: util.ObjectMetadata{
 				Version: "monitoring.coreos.com/v1", Kind: "Prometheus", Name: "prometheus-operator-kube-p-prometheus",
 			},
 			expected: "https://prometheus.externalurl.net",
@@ -165,7 +165,7 @@ component "prometheus-operator" {
 		  }
 		}
 		`,
-			expectedManifestName: testutil.ObjectMetadata{
+			expectedManifestName: util.ObjectMetadata{
 				Version: "monitoring.coreos.com/v1", Kind: "Prometheus", Name: "prometheus-operator-kube-p-prometheus",
 			},
 			expected: "https://prometheus.mydomain.net",
@@ -184,7 +184,7 @@ component "prometheus-operator" {
 		  }
 		}
 		`,
-			expectedManifestName: testutil.ObjectMetadata{
+			expectedManifestName: util.ObjectMetadata{
 				Version: "networking.k8s.io/v1beta1", Kind: "Ingress", Name: "prometheus-operator-kube-p-prometheus",
 			},
 			expected: "prometheus.mydomain.net",
@@ -193,7 +193,7 @@ component "prometheus-operator" {
 		{
 			name:        "verify foldersFromFilesStructure in configmap",
 			inputConfig: `component "prometheus-operator" {}`,
-			expectedManifestName: testutil.ObjectMetadata{
+			expectedManifestName: util.ObjectMetadata{
 				Version: "v1", Kind: "ConfigMap", Name: "prometheus-operator-grafana-config-dashboards",
 			},
 			expected: `apiVersion: 1

@@ -15,10 +15,15 @@
 package util
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	yamlserializer "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/yaml"
 
 	"helm.sh/helm/v3/pkg/action"
@@ -206,4 +211,89 @@ func chartFromManifests(metadata components.Metadata, manifests map[string]strin
 	}
 
 	return ch, nil
+}
+
+// ObjectMetadata uniquely identifies any object in the list of YAML manifests.
+type ObjectMetadata struct {
+	Version string
+	Kind    string
+	Name    string
+}
+
+// YAMLToUnstructured accepts a Kubernetes manifest in YAML format and returns an object of type
+// `unstructured.Unstructured`. This object has many methods that can be used by the consumer to
+// extract metadata from the Kubernetes manifest.
+func YAMLToUnstructured(yamlObj []byte) (*unstructured.Unstructured, error) {
+	u := &unstructured.Unstructured{}
+
+	// Decode YAML into `unstructured.Unstructured`.
+	dec := yamlserializer.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+	if _, _, err := dec.Decode(yamlObj, nil, u); err != nil {
+		return nil, fmt.Errorf("converting config to unstructured.Unstructured: %w", err)
+	}
+
+	return u, nil
+}
+
+// removeYAMLComments converts YAML to JSON and back again, this removes the comments in the YAML
+// and any extra whitespaces spaces.
+func removeYAMLComments(yamlObj []byte) ([]byte, error) {
+	jsonObj, err := yaml.YAMLToJSON(yamlObj)
+	if err != nil {
+		return nil, fmt.Errorf("converting YAML to JSON: %w", err)
+	}
+
+	yamlObj, err = yaml.JSONToYAML(jsonObj)
+	if err != nil {
+		return nil, fmt.Errorf("converting JSON to YAML: %w", err)
+	}
+
+	return yamlObj, nil
+}
+
+// SplitYAMLDocuments converts a YAML string with multiple YAML docs separated by `---` into unique
+// objects and returns those objects as a map.
+func SplitYAMLDocuments(yamlObj string) (map[ObjectMetadata]string, error) {
+	ret := make(map[ObjectMetadata]string)
+
+	reader := utilyaml.NewYAMLReader(bufio.NewReader(strings.NewReader(yamlObj)))
+
+	for {
+		// Read the YAML document delimited by `---`.
+		yamlManifest, err := reader.Read()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, fmt.Errorf("error reading the YAML: %w", err)
+		}
+
+		yamlManifest, err = removeYAMLComments(yamlManifest)
+		if err != nil {
+			return nil, fmt.Errorf("removing YAML comments: %w", err)
+		}
+
+		// Check if the YAML is empty.
+		if string(yamlManifest) == "null\n" {
+			continue
+		}
+
+		u, err := YAMLToUnstructured(yamlManifest)
+		if err != nil {
+			return nil, fmt.Errorf("YAML to unstructured object: %w", err)
+		}
+
+		if u.GetAPIVersion() == "" || u.GetKind() == "" {
+			return nil, fmt.Errorf("invalid configuration no APIVersion or Kind: %s", string(yamlManifest))
+		}
+
+		obj := ObjectMetadata{
+			Name:    u.GetName(),
+			Kind:    u.GetKind(),
+			Version: u.GetAPIVersion(),
+		}
+
+		ret[obj] = string(yamlManifest)
+	}
+
+	return ret, nil
 }

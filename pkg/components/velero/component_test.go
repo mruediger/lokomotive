@@ -235,7 +235,7 @@ component "velero" {
 	jsonPath := "{.spec.template.spec.tolerations[0].key}"
 	expected := "TestResticToletrationKey"
 
-	gotConfig := testutil.ConfigFromMap(t, m, testutil.ObjectMetadata{
+	gotConfig := testutil.ConfigFromMap(t, m, util.ObjectMetadata{
 		Version: "apps/v1", Kind: "DaemonSet", Name: "restic",
 	})
 

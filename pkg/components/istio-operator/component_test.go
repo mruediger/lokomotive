@@ -18,20 +18,21 @@ import (
 	"testing"
 
 	"github.com/kinvolk/lokomotive/pkg/components/internal/testutil"
+	"github.com/kinvolk/lokomotive/pkg/components/util"
 )
 
 func TestConversion(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		inputConfig          string
-		expectedManifestName testutil.ObjectMetadata
+		expectedManifestName util.ObjectMetadata
 		expected             string
 		jsonPath             string
 	}{
 		{
 			name:        "default profile",
 			inputConfig: `component "experimental-istio-operator" {}`,
-			expectedManifestName: testutil.ObjectMetadata{
+			expectedManifestName: util.ObjectMetadata{
 				Version: "install.istio.io/v1alpha1", Kind: "IstioOperator", Name: "istiocontrolplane",
 			},
 			jsonPath: "{.spec.profile}",
@@ -42,7 +43,7 @@ func TestConversion(t *testing.T) {
 			inputConfig: `component "experimental-istio-operator" {
 				profile = "demo"
 			}`,
-			expectedManifestName: testutil.ObjectMetadata{
+			expectedManifestName: util.ObjectMetadata{
 				Version: "install.istio.io/v1alpha1", Kind: "IstioOperator", Name: "istiocontrolplane",
 			},
 			jsonPath: "{.spec.profile}",
@@ -71,7 +72,7 @@ func TestVerifyServiceMonitor(t *testing.T) {
 
 	component := NewConfig()
 	m := testutil.RenderManifests(t, component, Name, inputConfig)
-	testutil.ConfigFromMap(t, m, testutil.ObjectMetadata{
+	testutil.ConfigFromMap(t, m, util.ObjectMetadata{
 		Version: "monitoring.coreos.com/v1", Kind: "ServiceMonitor", Name: "istio-operator",
 	})
 }
