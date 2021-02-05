@@ -83,7 +83,8 @@ type config struct {
 	OSVersion                string            `hcl:"os_version,optional"`
 	IPXEScriptURL            string            `hcl:"ipxe_script_url,optional"`
 	ManagementCIDRs          []string          `hcl:"management_cidrs"`
-	NodePrivateCIDR          string            `hcl:"node_private_cidr"`
+	NodePrivateCIDR          string            `hcl:"node_private_cidr,optional"`
+	NodePrivateCIDRs         []string          `hcl:"node_private_cidrs,optional"`
 	EnableAggregation        bool              `hcl:"enable_aggregation,optional"`
 	NetworkMTU               int               `hcl:"network_mtu,optional"`
 	PodCIDR                  string            `hcl:"pod_cidr,optional"`
@@ -236,6 +237,27 @@ func createTerraformConfigFile(cfg *config, terraformPath string) error {
 		// TODO: Render manually instead of marshaling.
 		return fmt.Errorf("marshaling management CIDRs: %w", err)
 	}
+
+	nodePrivateCIDRList := cfg.NodePrivateCIDRs
+	if cfg.NodePrivateCIDR != "" {
+		nodePrivateCIDRList = append(nodePrivateCIDRList, cfg.NodePrivateCIDR)
+	}
+
+	nodePrivateCIDRList, err = areUniqueStrings(nodePrivateCIDRList)
+	if err != nil {
+		return fmt.Errorf("multiple entries of node private CIDR: %w", err)
+	}
+
+	nodePrivateCIDRs, err := json.Marshal(nodePrivateCIDRList)
+	if err != nil {
+		// TODO: Render manually instead of marshaling.
+		return fmt.Errorf("marshalling node private CIDRs: %w", err)
+	}
+
+	if len(nodePrivateCIDRs) == 0 {
+		return fmt.Errorf("neither `node_private_cidr` nor `node_private_cidrs` provided")
+	}
+
 	// Configure oidc flags and set it to KubeAPIServerExtraFlags.
 	if cfg.OIDC != nil {
 		// Skipping the error checking here because its done in checkValidConfig().
@@ -270,15 +292,17 @@ func createTerraformConfigFile(cfg *config, terraformPath string) error {
 	cfg.terraformAddDeps()
 
 	terraformCfg := struct {
-		Config          config
-		Tags            string
-		SSHPublicKeys   string
-		ManagementCIDRs string
+		Config           config
+		Tags             string
+		SSHPublicKeys    string
+		ManagementCIDRs  string
+		NodePrivateCIDRs string
 	}{
-		Config:          *cfg,
-		Tags:            string(tags),
-		SSHPublicKeys:   string(keyListBytes),
-		ManagementCIDRs: string(managementCIDRs),
+		Config:           *cfg,
+		Tags:             string(tags),
+		SSHPublicKeys:    string(keyListBytes),
+		ManagementCIDRs:  string(managementCIDRs),
+		NodePrivateCIDRs: string(nodePrivateCIDRs),
 	}
 
 	if err := t.Execute(f, terraformCfg); err != nil {
@@ -666,4 +690,21 @@ func checkResFormat(reservationIDs map[string]string, name, errorPrefix, resPref
 	}
 
 	return diagnostics
+}
+
+func areUniqueStrings(strs []string) ([]string, error) {
+	uniqueStrs := make(map[string]interface{}, len(strs))
+	ret := make([]string, 0)
+
+	for _, str := range strs {
+		if _, ok := uniqueStrs[str]; ok {
+			return nil, fmt.Errorf("found multiple entries of: %q", str)
+		}
+
+		uniqueStrs[str] = nil
+
+		ret = append(ret, str)
+	}
+
+	return ret, nil
 }

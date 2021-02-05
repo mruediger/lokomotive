@@ -53,7 +53,7 @@ module "packet-{{.Config.ClusterName}}" {
   ipxe_script_url = "{{ .Config.IPXEScriptURL }}"
   {{ end }}
   management_cidrs = {{.ManagementCIDRs}}
-  node_private_cidr = "{{.Config.NodePrivateCIDR}}"
+  node_private_cidrs = {{.NodePrivateCIDRs}}
 
   enable_aggregation = {{.Config.EnableAggregation}}
 
