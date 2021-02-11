@@ -19,6 +19,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 
+	"github.com/kinvolk/lokomotive/pkg/components/internal/testutil"
 	"github.com/kinvolk/lokomotive/pkg/components/util"
 )
 
@@ -80,5 +81,47 @@ component "rook-ceph" {
 	}
 	if len(m) <= 0 {
 		t.Fatalf("Rendered manifests shouldn't be empty")
+	}
+}
+
+func TestConversion(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		inputConfig          string
+		expectedManifestName string
+		expected             string
+		jsonPath             string
+	}{
+		{
+			name:                 "default reclaim policy",
+			inputConfig:          `component "rook-ceph" {}`,
+			expectedManifestName: "",
+			jsonPath:             "{.reclaimPolicy}",
+			expected:             "Retain",
+		},
+		{
+			name: "over-ridden reclaim policy",
+			inputConfig: `component "rook-ceph" {
+				storage_class {
+					reclaim_policy = "Delete"
+				}
+			}`,
+			expectedManifestName: "",
+			jsonPath:             "{.reclaimPolicy}",
+			expected:             "Delete",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			component := NewConfig()
+			m := testutil.RenderManifests(t, component, Name, tc.inputConfig)
+			gotConfig := testutil.ConfigFromMap(t, m, tc.expectedManifestName)
+
+			testutil.MatchJSONPathStringValue(t, gotConfig, tc.jsonPath, tc.expected)
+		})
 	}
 }
